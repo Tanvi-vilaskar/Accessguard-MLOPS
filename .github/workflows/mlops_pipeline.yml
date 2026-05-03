@@ -31,23 +31,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - run: pip install black flake8
+      - name: Install lint tools
+        run: |
+          pip install --upgrade pip
+          pip install black flake8
 
-      # Fix: use same version behavior
-      - run: black --check --line-length 88 .
+      - name: Black Check (must match local)
+        run: black --check --line-length 88 .
 
-      # Fix: relaxed flake8 (prevents CI unnecessary failure)
-      - run: |
+      - name: Flake8 (relaxed)
+        run: |
           flake8 . \
-          --max-line-length=100 \
-          --extend-ignore=E203,W503,E501 \
-          --count --statistics
+            --max-line-length=100 \
+            --extend-ignore=E203,W503,E501 \
+            --count --statistics
 
 # ─────────────────────────────
 # JOB 2 — TEST
@@ -64,14 +69,17 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - run: |
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pytest-cov
 
-      - run: |
+      - name: Run tests
+        run: |
           pytest tests/ -v \
-          --cov=accessguard \
-          --cov=mlops
+            --cov=accessguard \
+            --cov=mlops
 
 # ─────────────────────────────
 # JOB 3 — TRAIN
@@ -88,12 +96,16 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Run training
         run: python mlops/pipeline/train_pipeline.py
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: model-artifacts
           path: |
@@ -115,14 +127,19 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - uses: actions/download-artifact@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
           name: model-artifacts
           path: .
 
-      - run: python mlops/monitoring/monitor_drift.py
+      - name: Run drift monitor
+        run: python mlops/monitoring/monitor_drift.py
 
 # ─────────────────────────────
 # JOB 5 — DEPLOY
@@ -138,7 +155,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/download-artifact@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
           name: model-artifacts
           path: .
@@ -151,6 +169,6 @@ jobs:
           git add models/ mlops/monitoring/
 
           git diff --cached --quiet || \
-          git commit -m "Auto-update model"
+          git commit -m "🤖 Auto-update model"
 
           git push

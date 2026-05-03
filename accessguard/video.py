@@ -1,13 +1,18 @@
-import cv2
 import os
+import time
+import cv2
 import av
-from config import VIDEO_DIR
 from streamlit_webrtc import VideoTransformerBase
+from config import VIDEO_DIR
 
-# Load OpenCV Haar Cascade face detector
+
+# Ensure directory exists
+os.makedirs(VIDEO_DIR, exist_ok=True)
+
+# Load Haar Cascade
 MODEL_PATH = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 if not os.path.exists(MODEL_PATH):
-    raise FileNotFoundError(f"❌ Face detection model not found at {MODEL_PATH}")
+    raise FileNotFoundError(f"Face detection model not found at {MODEL_PATH}")
 
 detector = cv2.CascadeClassifier(MODEL_PATH)
 
@@ -22,7 +27,6 @@ class FaceDetector(VideoTransformerBase):
         img = frame.to_ndarray(format="bgr24")
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-        # Detect faces
         faces = detector.detectMultiScale(
             gray, scaleFactor=1.1, minNeighbors=5, minSize=(60, 60)
         )
@@ -45,23 +49,12 @@ class FaceDetector(VideoTransformerBase):
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 
-# video.py
-import cv2
-import os
-import time
-
-VIDEO_DIR = "data/videos"
-os.makedirs(VIDEO_DIR, exist_ok=True)
-
-
 def capture_video(username, duration=5):
     """
     Capture a short video of the user for face registration.
-    Returns path to the saved video or None if failed.
     """
     file_path = os.path.join(VIDEO_DIR, f"user_{username}.avi")
 
-    # Delete previous file if exists
     if os.path.exists(file_path):
         try:
             os.remove(file_path)
@@ -74,15 +67,16 @@ def capture_video(username, duration=5):
         print("Cannot access webcam")
         return None
 
-    # Video writer
     fourcc = cv2.VideoWriter_fourcc(*"XVID")
     fps = 20.0
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
     out = cv2.VideoWriter(file_path, fourcc, fps, (width, height))
 
     start_time = time.time()
     face_detected = False
+
     face_cascade = cv2.CascadeClassifier(
         cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
     )
@@ -94,33 +88,31 @@ def capture_video(username, duration=5):
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+
         if len(faces) > 0:
             face_detected = True
 
         out.write(frame)
 
-        # Stop after duration seconds
         if time.time() - start_time > duration:
             break
 
-    # Release resources properly
     cap.release()
     out.release()
-    # cv2.destroyAllWindows()
 
     if face_detected:
         return file_path
-    else:
-        # If no face detected, remove the video safely
-        if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except PermissionError:
-                print(f"Cannot delete {file_path}, file in use")
-        return None
+
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except PermissionError:
+            print(f"Cannot delete {file_path}, file in use")
+
+    return None
 
 
 def verify_video(user_id):
-    """Check if registered video exists (to be extended with recognition)."""
+    """Check if registered video exists."""
     file_path = os.path.join(VIDEO_DIR, f"user_{user_id}.avi")
     return os.path.exists(file_path)

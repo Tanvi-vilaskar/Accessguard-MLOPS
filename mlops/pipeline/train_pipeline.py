@@ -16,7 +16,6 @@ Steps:
 """
 
 import os
-import sys
 import json
 import hashlib
 import logging
@@ -35,6 +34,8 @@ from sklearn.metrics import (
     f1_score,
     roc_auc_score,
 )
+import sys
+sys.stdout.reconfigure(encoding="utf-8")
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parents[2]
@@ -49,6 +50,7 @@ METRICS_FILE = METRICS_DIR / "metrics.json"
 
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
 METRICS_DIR.mkdir(parents=True, exist_ok=True)
+
 
 # ── Logging ────────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -221,13 +223,13 @@ def save_model(model, encoders):
     log.info("STEP 5 — Saving model artifact")
 
     joblib.dump((model, encoders), MODEL_FILE)
-    log.info("Model saved → %s", MODEL_FILE)
+    log.info("Model saved -> %s", MODEL_FILE)
 
     # Versioned copy: models/accessguard_model_<timestamp>.pkl
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     ver = MODELS_DIR / f"accessguard_model_{ts}.pkl"
     joblib.dump((model, encoders), ver)
-    log.info("Versioned copy → %s", ver)
+    log.info("Versioned copy -> %s", ver)
 
     # Checksum for integrity
     with open(MODEL_FILE, "rb") as fh:

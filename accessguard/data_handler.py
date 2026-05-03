@@ -42,16 +42,6 @@ def save_users(df):
 
 
 def load_logins():
-    return pd.read_csv(LOGINS_CSV)
-
-
-# at top of data_handler.py (or a new module)
-import os
-import pandas as pd
-from config import LOGINS_CSV, USERS_CSV
-
-
-def load_logins():
     if not os.path.exists(LOGINS_CSV):
         return pd.DataFrame(
             columns=[
@@ -65,10 +55,6 @@ def load_logins():
             ]
         )
     return pd.read_csv(LOGINS_CSV)
-
-
-def save_logins(df):
-    df.to_csv(LOGINS_CSV, index=False)
 
 
 def save_logins(df):
