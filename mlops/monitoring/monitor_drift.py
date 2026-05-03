@@ -17,13 +17,13 @@ import json
 import logging
 from pathlib import Path
 
-ROOT         = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[2]
 METRICS_FILE = ROOT / "mlops" / "monitoring" / "metrics.json"
 
 # ── Drift Thresholds (tune as needed) ──────────────────────────────────────────
 THRESHOLDS = {
-    "accuracy":    0.70,   # must be >= 70%
-    "f1_weighted": 0.65,   # must be >= 65%
+    "accuracy": 0.70,  # must be >= 70%
+    "f1_weighted": 0.65,  # must be >= 65%
 }
 
 logging.basicConfig(
@@ -44,7 +44,7 @@ def load_latest_metrics() -> dict:
         data = json.load(fh)
 
     if isinstance(data, list):
-        return data[-1]   # Most recent entry
+        return data[-1]  # Most recent entry
     return data
 
 
@@ -94,9 +94,9 @@ def generate_drift_report(metrics: dict, violations: list[str]) -> str:
 def main() -> int:
     log.info("Running drift detection...")
     try:
-        metrics    = load_latest_metrics()
+        metrics = load_latest_metrics()
         violations = check_drift(metrics)
-        report     = generate_drift_report(metrics, violations)
+        report = generate_drift_report(metrics, violations)
         print("\n" + report + "\n")
 
         # Write report to file for CI artifact upload

@@ -2,7 +2,11 @@
 import os
 import pandas as pd
 from datetime import datetime
-from utils import LOGINS_CSV, get_geolocation  # ensure LOGINS_CSV constant exported in utils/config
+from .utils import (
+    LOGINS_CSV,
+    get_geolocation,
+)  # ensure LOGINS_CSV constant exported in utils/config
+
 
 def compute_user_profile(username, min_rows=5):
     """
@@ -48,6 +52,7 @@ def compute_user_profile(username, min_rows=5):
     }
 
     return profile
+
 
 def get_user_profile(username):
     """Convenience wrapper: returns computed profile (no caching)."""

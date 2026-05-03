@@ -4,11 +4,12 @@ import joblib
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
-from data_handler import load_logins
+from .data_handler import load_logins
 from config import DATA_DIR
 
 USER_MODEL_DIR = os.path.join(DATA_DIR, "user_models")
 os.makedirs(USER_MODEL_DIR, exist_ok=True)
+
 
 def train_user_model(username, min_rows=50):
     logins = load_logins()
@@ -21,9 +22,9 @@ def train_user_model(username, min_rows=50):
     user_rows = user_rows.dropna(subset=["Timestamp"])
     user_rows["Hour"] = user_rows["Timestamp"].dt.hour
 
-    X = user_rows[["IP","Device","Browser","Hour"]].astype(str)
+    X = user_rows[["IP", "Device", "Browser", "Hour"]].astype(str)
     encoders = {}
-    for col in ["IP","Device","Browser"]:
+    for col in ["IP", "Device", "Browser"]:
         le = LabelEncoder()
         X[col] = le.fit_transform(X[col])
         encoders[col] = le
@@ -35,6 +36,7 @@ def train_user_model(username, min_rows=50):
     model_path = os.path.join(USER_MODEL_DIR, f"{username}.joblib")
     joblib.dump((model, encoders), model_path)
     return model_path
+
 
 def load_user_model(username):
     model_path = os.path.join(USER_MODEL_DIR, f"{username}.joblib")

@@ -29,19 +29,22 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
-    classification_report, confusion_matrix,
-    accuracy_score, f1_score, roc_auc_score
+    classification_report,
+    confusion_matrix,
+    accuracy_score,
+    f1_score,
+    roc_auc_score,
 )
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parents[2]
-DATA_DIR    = ROOT / "data"
-MODELS_DIR  = ROOT / "models"
+DATA_DIR = ROOT / "data"
+MODELS_DIR = ROOT / "models"
 METRICS_DIR = ROOT / "mlops" / "monitoring"
 
-LOGINS_CSV  = DATA_DIR / "logins.csv"
-USERS_CSV   = DATA_DIR / "users.csv"
-MODEL_FILE  = MODELS_DIR / "accessguard_model.pkl"
+LOGINS_CSV = DATA_DIR / "logins.csv"
+USERS_CSV = DATA_DIR / "users.csv"
+MODEL_FILE = MODELS_DIR / "accessguard_model.pkl"
 METRICS_FILE = METRICS_DIR / "metrics.json"
 
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
@@ -68,7 +71,15 @@ def load_and_validate():
     df = pd.read_csv(LOGINS_CSV)
     log.info("Loaded %d rows, columns: %s", len(df), list(df.columns))
 
-    required_cols = ["Username", "IP", "Device", "Browser", "Timestamp", "MFA Enabled", "Outcome"]
+    required_cols = [
+        "Username",
+        "IP",
+        "Device",
+        "Browser",
+        "Timestamp",
+        "MFA Enabled",
+        "Outcome",
+    ]
     missing = [c for c in required_cols if c not in df.columns]
     if missing:
         raise ValueError(f"Missing required columns: {missing}")
@@ -127,9 +138,9 @@ def train(df: pd.DataFrame):
         X[col] = enc.fit_transform(X[col])
         encoders[col] = enc
 
-    X["MFA Enabled"]  = df["MFA Enabled"].astype(int)
-    X["LoginHour"]    = df["LoginHour"].astype(int)
-    X["User_New_IP"]  = df["User_New_IP"].astype(int)
+    X["MFA Enabled"] = df["MFA Enabled"].astype(int)
+    X["LoginHour"] = df["LoginHour"].astype(int)
+    X["User_New_IP"] = df["User_New_IP"].astype(int)
 
     y_str = df["Outcome"].astype(str).fillna("Unknown")
     outcome_enc = LabelEncoder()
@@ -163,9 +174,9 @@ def evaluate(model, X_test, y_test, outcome_enc, encoders):
     y_pred = model.predict(X_test)
     labels = outcome_enc.classes_
 
-    acc   = accuracy_score(y_test, y_pred)
-    f1    = f1_score(y_test, y_pred, average="weighted", zero_division=0)
-    cm    = confusion_matrix(y_test, y_pred).tolist()
+    acc = accuracy_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred, average="weighted", zero_division=0)
+    cm = confusion_matrix(y_test, y_pred).tolist()
     report = classification_report(y_test, y_pred, target_names=labels, zero_division=0)
 
     # AUC (only if binary classification)
@@ -213,7 +224,7 @@ def save_model(model, encoders):
     log.info("Model saved → %s", MODEL_FILE)
 
     # Versioned copy: models/accessguard_model_<timestamp>.pkl
-    ts  = datetime.now().strftime("%Y%m%d_%H%M%S")
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     ver = MODELS_DIR / f"accessguard_model_{ts}.pkl"
     joblib.dump((model, encoders), ver)
     log.info("Versioned copy → %s", ver)
@@ -234,17 +245,17 @@ def run_pipeline():
     log.info("=" * 60)
 
     try:
-        df                              = load_and_validate()
-        df                              = preprocess(df)
-        model, encoders, Xt, yt, oenc   = train(df)
-        metrics                         = evaluate(model, Xt, yt, oenc, encoders)
-        versioned_path                  = save_model(model, encoders)
+        df = load_and_validate()
+        df = preprocess(df)
+        model, encoders, Xt, yt, oenc = train(df)
+        metrics = evaluate(model, Xt, yt, oenc, encoders)
+        versioned_path = save_model(model, encoders)
 
         log.info("=" * 60)
         log.info("Pipeline completed successfully")
         log.info("  Accuracy : %.4f", metrics["accuracy"])
         log.info("  F1 Score : %.4f", metrics["f1_weighted"])
-        log.info("  Model    : %s",   versioned_path)
+        log.info("  Model    : %s", versioned_path)
         log.info("=" * 60)
         return 0
 

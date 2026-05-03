@@ -3,7 +3,7 @@ import socket, platform
 from datetime import datetime
 import requests
 import pandas as pd
-from config import LOGINS_CSV
+from .config import LOGINS_CSV
 import pandas as pd
 import requests
 from datetime import datetime, timedelta
@@ -12,17 +12,21 @@ from datetime import datetime, timedelta
 # 📍 1. Get Geolocation by IP
 # =============================
 
+
 def get_ip():
     try:
         return socket.gethostbyname(socket.gethostname())
     except:
         return "0.0.0.0"
 
+
 def get_device_info():
     return f"{platform.system()} {platform.release()} ({platform.machine()})"
 
+
 def get_browser_info():
     return "Streamlit-App"
+
 
 def get_hour():
     return datetime.now().hour
@@ -43,17 +47,20 @@ def get_geolocation(ip_address: str) -> dict:
                 "region": data.get("region", "Unknown"),
                 "country": data.get("country_name", "Unknown"),
                 "latitude": data.get("latitude"),
-                "longitude": data.get("longitude")
+                "longitude": data.get("longitude"),
             }
         else:
             return {"ip": ip_address, "error": "API request failed"}
     except Exception as e:
         return {"ip": ip_address, "error": str(e)}
 
+
 # ==================================
 # 🕒 2. Login Attempts in Last Hour
 # ==================================
-def login_attempts_in_last_hour(username: str, log_path: str = "data/logins.csv") -> int:
+def login_attempts_in_last_hour(
+    username: str, log_path: str = "data/logins.csv"
+) -> int:
     """
     Count how many login attempts a specific user made in the last 1 hour.
     """
@@ -70,6 +77,7 @@ def login_attempts_in_last_hour(username: str, log_path: str = "data/logins.csv"
     except Exception:
         return 0
 
+
 # =========================
 # 📁 3. Load Logins Dataset
 # =========================
@@ -82,7 +90,15 @@ def load_logins(log_path: str = "data/logins.csv") -> pd.DataFrame:
         df = pd.read_csv(log_path)
         return df
     except FileNotFoundError:
-        columns = ["timestamp", "username", "ip", "device", "browser", "risk_score", "status"]
+        columns = [
+            "timestamp",
+            "username",
+            "ip",
+            "device",
+            "browser",
+            "risk_score",
+            "status",
+        ]
         return pd.DataFrame(columns=columns)
 
 

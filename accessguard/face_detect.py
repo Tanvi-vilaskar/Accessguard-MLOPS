@@ -9,7 +9,9 @@ MODEL_PATH = "mmod_human_face_detector.dat"
 
 # Load CNN face detector
 if not os.path.exists(MODEL_PATH):
-    raise FileNotFoundError("Download mmod_human_face_detector.dat from dlib website and place in script folder.")
+    raise FileNotFoundError(
+        "Download mmod_human_face_detector.dat from dlib website and place in script folder."
+    )
 
 cnn_face_detector = dlib.cnn_face_detection_model_v1(MODEL_PATH)
 
@@ -42,8 +44,15 @@ else:
 
         # Draw rectangle
         cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        cv2.putText(image, f"Face {i+1}", (x1, y1-10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+        cv2.putText(
+            image,
+            f"Face {i+1}",
+            (x1, y1 - 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (0, 255, 0),
+            2,
+        )
 
     # Show output
     cv2.imshow("Face Detection", image)

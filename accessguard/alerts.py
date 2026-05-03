@@ -4,14 +4,20 @@ import os
 import requests
 
 ALERT_LOG = "data/alerts.log"
-SLACK_WEBHOOK = os.environ.get("SLACK_WEBHOOK_URL")  # set this in your environment if you want Slack alerts
+SLACK_WEBHOOK = os.environ.get(
+    "SLACK_WEBHOOK_URL"
+)  # set this in your environment if you want Slack alerts
+
 
 def _write_log(message: str):
     os.makedirs(os.path.dirname(ALERT_LOG), exist_ok=True)
     with open(ALERT_LOG, "a") as f:
         f.write(message + "\n")
 
-def notify_manager(username: str, reason: str, video_path: str = None, severity: str = "HIGH"):
+
+def notify_manager(
+    username: str, reason: str, video_path: str = None, severity: str = "HIGH"
+):
     """
     Log locally and optionally send Slack notification.
     severity: "HIGH" / "MEDIUM" / "LOW"

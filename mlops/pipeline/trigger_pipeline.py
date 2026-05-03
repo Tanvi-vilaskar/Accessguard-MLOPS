@@ -26,11 +26,11 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
-ROOT        = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[2]
 TRIGGER_LOG = ROOT / "mlops" / "monitoring" / "trigger.log"
 METRICS_DIR = ROOT / "mlops" / "monitoring"
-DATA_DIR    = ROOT / "data"
-LOGINS_CSV  = DATA_DIR / "logins.csv"
+DATA_DIR = ROOT / "data"
+LOGINS_CSV = DATA_DIR / "logins.csv"
 
 # Minimum new registrations before retraining
 RETRAIN_EVERY_N_USERS = int(os.getenv("RETRAIN_EVERY_N_USERS", "1"))
@@ -94,6 +94,7 @@ def _run_training_pipeline() -> bool:
             sys.path.insert(0, str(ROOT))
 
         from mlops.pipeline.train_pipeline import run_pipeline
+
         exit_code = run_pipeline()
         return exit_code == 0
     except Exception as exc:
@@ -118,25 +119,34 @@ def _git_push_model():
     try:
         subprocess.run(
             ["git", "config", "user.email", "mlops-bot@accessguard.local"],
-            cwd=ROOT, check=True, capture_output=True
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
         )
         subprocess.run(
             ["git", "config", "user.name", "MLOps Bot"],
-            cwd=ROOT, check=True, capture_output=True
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
         )
         subprocess.run(
             ["git", "add", str(model_path), str(METRICS_DIR)],
-            cwd=ROOT, check=True, capture_output=True
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
         )
         subprocess.run(
-            ["git", "commit", "-m",
-             f"[auto] Retrain model after new registration {datetime.now().isoformat()}"],
-            cwd=ROOT, check=True, capture_output=True
+            [
+                "git",
+                "commit",
+                "-m",
+                f"[auto] Retrain model after new registration {datetime.now().isoformat()}",
+            ],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
         )
-        subprocess.run(
-            ["git", "push"],
-            cwd=ROOT, check=True, capture_output=True
-        )
+        subprocess.run(["git", "push"], cwd=ROOT, check=True, capture_output=True)
         log.info("Model artifact pushed to repository.")
     except subprocess.CalledProcessError as exc:
         log.warning("Git push failed (non-fatal): %s", exc)
@@ -161,7 +171,8 @@ def on_new_registration(username: str):
     new_count = _count_registrations_since_last_train()
     log.info(
         "New registrations since last train: %d (threshold: %d)",
-        new_count, RETRAIN_EVERY_N_USERS
+        new_count,
+        RETRAIN_EVERY_N_USERS,
     )
 
     if new_count >= RETRAIN_EVERY_N_USERS:
@@ -175,7 +186,8 @@ def on_new_registration(username: str):
     else:
         log.info(
             "Not enough new data yet (%d/%d). Skipping retrain.",
-            new_count, RETRAIN_EVERY_N_USERS
+            new_count,
+            RETRAIN_EVERY_N_USERS,
         )
 
 

@@ -23,11 +23,13 @@ class FaceDetector(VideoTransformerBase):
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # Detect faces
-        faces = detector.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(60, 60))
+        faces = detector.detectMultiScale(
+            gray, scaleFactor=1.1, minNeighbors=5, minSize=(60, 60)
+        )
 
         if len(faces) > 0:
             self.face_detected = True
-            for (x, y, w, h) in faces:
+            for x, y, w, h in faces:
                 cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
         else:
             cv2.putText(
@@ -50,6 +52,7 @@ import time
 
 VIDEO_DIR = "data/videos"
 os.makedirs(VIDEO_DIR, exist_ok=True)
+
 
 def capture_video(username, duration=5):
     """
@@ -80,7 +83,9 @@ def capture_video(username, duration=5):
 
     start_time = time.time()
     face_detected = False
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    face_cascade = cv2.CascadeClassifier(
+        cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+    )
 
     while True:
         ret, frame = cap.read()
@@ -113,7 +118,6 @@ def capture_video(username, duration=5):
             except PermissionError:
                 print(f"Cannot delete {file_path}, file in use")
         return None
-
 
 
 def verify_video(user_id):

@@ -2,21 +2,32 @@
 import os
 import math
 from datetime import datetime
-from utils import get_geolocation, login_attempts_in_last_hour, load_logins  # load_logins helper added below
-from profile_model import get_user_profile 
+from .utils import get_geolocation, login_attempts_in_last_hour, load_logins
+from .profile_model import get_user_profile
 
 # Tunable thresholds
 GEO_MISMATCH_SCORE = 25
 TIME_DEVIATION_SCORE = 20
 ANOMALY_COUNT_BONUS = 25
 
+
 def _hour_distance(h1, h2):
     # circular distance between hours (0-23)
     d = abs(h1 - h2)
     return min(d, 24 - d)
 
-def predict_login(username, ip, device, browser, hour, mfa_enabled,
-                  registered_ip=None, registered_device=None, registered_browser=None):
+
+def predict_login(
+    username,
+    ip,
+    device,
+    browser,
+    hour,
+    mfa_enabled,
+    registered_ip=None,
+    registered_device=None,
+    registered_browser=None,
+):
     """
     Enhanced risk scoring:
      - original checks (IP/device/browser)
@@ -48,13 +59,20 @@ def predict_login(username, ip, device, browser, hour, mfa_enabled,
         profile = get_user_profile(username)
         registered_loc = profile.get("last_geolocation") if profile else None
 
-        if registered_loc and current_loc and registered_loc != "Unknown" and current_loc != "Unknown":
+        if (
+            registered_loc
+            and current_loc
+            and registered_loc != "Unknown"
+            and current_loc != "Unknown"
+        ):
             # Compare main country strings (split by comma)
             cur_country = current_loc.split(",")[0].strip()
             reg_country = registered_loc.split(",")[0].strip()
             if cur_country and reg_country and cur_country != reg_country:
                 score += GEO_MISMATCH_SCORE
-                reasons.append(f"Geolocation mismatch: {current_loc} vs {registered_loc}")
+                reasons.append(
+                    f"Geolocation mismatch: {current_loc} vs {registered_loc}"
+                )
     except Exception:
         # don't fail entirely on geolocation service errors
         pass
@@ -69,12 +87,16 @@ def predict_login(username, ip, device, browser, hour, mfa_enabled,
                 # penalize proportionally: far > 4 hours => apply full TIME_DEVIATION_SCORE
                 if dist >= 4:
                     score += TIME_DEVIATION_SCORE
-                    reasons.append(f"Login at unusual hour: {hour} (user average: {mean_hour:.1f} ± {std_hour:.1f})")
+                    reasons.append(
+                        f"Login at unusual hour: {hour} (user average: {mean_hour:.1f} ± {std_hour:.1f})"
+                    )
                 elif dist > 1:
                     # smaller penalty
                     add = int((dist / 4.0) * TIME_DEVIATION_SCORE)
                     score += add
-                    reasons.append(f"Login hour somewhat unusual: {hour} (avg {mean_hour:.1f})")
+                    reasons.append(
+                        f"Login hour somewhat unusual: {hour} (avg {mean_hour:.1f})"
+                    )
     except Exception:
         pass
 
@@ -85,11 +107,13 @@ def predict_login(username, ip, device, browser, hour, mfa_enabled,
         reasons.append(f"{attempts_last_hour} login attempts in last hour")
 
     # Combined anomaly boost
-    anomaly_count = sum([
-        (ip and registered_ip and ip != registered_ip),
-        (device and registered_device and device != registered_device),
-        (browser and registered_browser and browser != registered_browser),
-    ])
+    anomaly_count = sum(
+        [
+            (ip and registered_ip and ip != registered_ip),
+            (device and registered_device and device != registered_device),
+            (browser and registered_browser and browser != registered_browser),
+        ]
+    )
     if anomaly_count >= 2:
         score += ANOMALY_COUNT_BONUS
         reasons.append("Multiple anomalies detected")

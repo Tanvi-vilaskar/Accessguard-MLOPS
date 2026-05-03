@@ -18,7 +18,9 @@ sys.path.insert(0, str(ROOT))
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Manually retrain the AccessGuard model.")
+    parser = argparse.ArgumentParser(
+        description="Manually retrain the AccessGuard model."
+    )
     parser.add_argument(
         "--check-drift",
         action="store_true",
@@ -31,6 +33,7 @@ def main():
     print("=" * 60)
 
     from mlops.pipeline.train_pipeline import run_pipeline
+
     train_exit = run_pipeline()
 
     if train_exit != 0:
@@ -42,6 +45,7 @@ def main():
     if args.check_drift:
         print("\nRunning drift monitor...")
         from mlops.monitoring.monitor_drift import main as drift_main
+
         drift_exit = drift_main()
         if drift_exit != 0:
             print("⚠️  Drift detected — see report above.")
