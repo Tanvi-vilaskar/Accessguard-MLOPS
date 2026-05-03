@@ -26,7 +26,7 @@ mlops/monitoring/drift_report.txt
 
 # Data (may contain PII — never commit raw user data)
 data/videos/
-data/*.csv
+
 
 # Test coverage
 .coverage
