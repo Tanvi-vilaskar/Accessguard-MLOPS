@@ -1,0 +1,286 @@
+# ============================================================
+# .github/workflows/mlops_pipeline.yml
+# ============================================================
+# AccessGuard — MLOps CI/CD Pipeline
+#
+# TRIGGERS:
+#   • Push / PR to main or develop (data or source changes)
+#   • Manual dispatch (with optional retrain flag)
+#   • Scheduled nightly run (drift check + retrain if needed)
+#
+# JOBS:
+#   1. lint          — code quality (flake8, black)
+#   2. test          — unit + integration tests (pytest)
+#   3. train         — retrain model on latest data
+#   4. drift_check   — compare metrics against thresholds
+#   5. deploy        — update model artifact on main branch
+# ============================================================
+
+name: AccessGuard MLOps Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "data/logins.csv"
+      - "data/users.csv"
+      - "accessguard/**"
+      - "mlops/**"
+      - "tests/**"
+      - "requirements.txt"
+
+  pull_request:
+    branches: [main]
+    paths:
+      - "accessguard/**"
+      - "mlops/**"
+      - "tests/**"
+
+  # Manual trigger — set retrain=true to force a full retrain
+  workflow_dispatch:
+    inputs:
+      retrain:
+        description: "Force model retrain (yes/no)"
+        required: false
+        default: "yes"
+
+  # Nightly drift check + retrain at 02:00 UTC
+  schedule:
+    - cron: "0 2 * * *"
+
+# ── Shared env variables ────────────────────────────────────────────────────────
+env:
+  PYTHON_VERSION: "3.10"
+  MODEL_PATH: models/accessguard_model.pkl
+  METRICS_PATH: mlops/monitoring/metrics.json
+
+# ── Cancel in-progress runs on new push ────────────────────────────────────────
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 1 — Lint & Code Quality
+  # ────────────────────────────────────────────────────────────────────────────
+  lint:
+    name: "1️⃣  Lint & Format Check"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install lint dependencies
+        run: pip install flake8 black
+
+      - name: Run Black (format check)
+        run: black --check --diff accessguard/ mlops/ tests/
+
+      - name: Run Flake8 (style + errors)
+        run: |
+          flake8 accessguard/ mlops/ tests/ \
+            --max-line-length=100 \
+            --extend-ignore=E203,W503 \
+            --count --statistics
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 2 — Unit & Integration Tests
+  # ────────────────────────────────────────────────────────────────────────────
+  test:
+    name: "2️⃣  Run Tests"
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run tests with coverage
+        run: |
+          pytest tests/ \
+            --cov=accessguard \
+            --cov=mlops \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term-missing \
+            -v
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 3 — Train Model
+  # Runs on: push to main/develop with data changes, manual dispatch,
+  #          or scheduled nightly run
+  # ────────────────────────────────────────────────────────────────────────────
+  train:
+    name: "3️⃣  Train Model"
+    runs-on: ubuntu-latest
+    needs: test
+    # Only retrain when data or model code changed, or manually triggered
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      (
+        github.event_name == 'push' &&
+        (
+          contains(github.event.head_commit.modified, 'data/') ||
+          contains(github.event.head_commit.modified, 'accessguard/model.py') ||
+          contains(github.event.head_commit.modified, 'mlops/pipeline/')
+        )
+      )
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run training pipeline
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python mlops/pipeline/train_pipeline.py
+
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessguard-model
+          path: |
+            models/accessguard_model.pkl
+            models/accessguard_model.sha256
+            mlops/monitoring/metrics.json
+          retention-days: 30
+
+      - name: Upload pipeline log
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pipeline-log
+          path: mlops/monitoring/pipeline.log
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 4 — Drift Detection
+  # ────────────────────────────────────────────────────────────────────────────
+  drift_check:
+    name: "4️⃣  Drift Detection"
+    runs-on: ubuntu-latest
+    needs: train
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Download metrics produced by the train job
+      - name: Download model artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: accessguard-model
+
+      - name: Run drift monitor
+        run: python mlops/monitoring/monitor_drift.py
+
+      - name: Upload drift report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: drift-report
+          path: mlops/monitoring/drift_report.txt
+
+      - name: Notify Slack on drift
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-type: application/json' \
+            --data '{
+              "text": "⚠️ *AccessGuard — Model Drift Detected!*\nBranch: `${{ github.ref_name }}`\nCheck GitHub Actions for details."
+            }'
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 5 — Deploy (commit updated model back to repo)
+  # Only runs on main branch after successful drift check
+  # ────────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: "5️⃣  Deploy Model Artifact"
+    runs-on: ubuntu-latest
+    needs: drift_check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Download trained model
+        uses: actions/download-artifact@v4
+        with:
+          name: accessguard-model
+          path: models/
+
+      - name: Download updated metrics
+        uses: actions/download-artifact@v4
+        with:
+          name: accessguard-model
+          path: mlops/monitoring/
+
+      - name: Commit & push model artifact
+        run: |
+          git config user.name  "MLOps Bot"
+          git config user.email "mlops-bot@accessguard.local"
+          git add models/ mlops/monitoring/metrics.json
+          # Only commit if there are actual changes
+          git diff --cached --quiet || \
+            git commit -m "🤖 [MLOps] Auto-retrain: $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push
+
+      - name: Notify Slack on successful deploy
+        if: success() && env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-type: application/json' \
+            --data '{
+              "text": "✅ *AccessGuard — Model retrained & deployed!*\nBranch: `main`\nRun: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View>"
+            }'
