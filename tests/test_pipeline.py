@@ -14,7 +14,6 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
-
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
 SAMPLE_LOGINS = {
@@ -70,9 +69,7 @@ SAMPLE_LOGINS = {
         "Chrome",
         "Safari",
     ],
-    "Timestamp": pd.date_range("2025-01-01", periods=11, freq="h")
-    .astype(str)
-    .tolist(),
+    "Timestamp": pd.date_range("2025-01-01", periods=11, freq="h").astype(str).tolist(),
     "MFA Enabled": [1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0],
     "Outcome": [0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1],
 }
@@ -99,12 +96,8 @@ def tmp_data_dir(tmp_path):
     data_dir = tmp_path / "data"
     data_dir.mkdir()
 
-    pd.DataFrame(SAMPLE_LOGINS).to_csv(
-        data_dir / "logins.csv", index=False
-    )
-    pd.DataFrame(SAMPLE_USERS).to_csv(
-        data_dir / "users.csv", index=False
-    )
+    pd.DataFrame(SAMPLE_LOGINS).to_csv(data_dir / "logins.csv", index=False)
+    pd.DataFrame(SAMPLE_USERS).to_csv(data_dir / "users.csv", index=False)
 
     return tmp_path
 
@@ -116,18 +109,12 @@ class TestDataLoading:
     def test_load_valid_csv(self, tmp_data_dir, monkeypatch):
         from mlops.pipeline import train_pipeline as tp
 
-        monkeypatch.setattr(
-            tp, "LOGINS_CSV", tmp_data_dir / "data" / "logins.csv"
-        )
+        monkeypatch.setattr(tp, "LOGINS_CSV", tmp_data_dir / "data" / "logins.csv")
         monkeypatch.setattr(tp, "MODELS_DIR", tmp_data_dir / "models")
-        monkeypatch.setattr(
-            tp, "METRICS_DIR", tmp_data_dir / "mlops" / "monitoring"
-        )
+        monkeypatch.setattr(tp, "METRICS_DIR", tmp_data_dir / "mlops" / "monitoring")
 
         (tmp_data_dir / "models").mkdir(parents=True, exist_ok=True)
-        (tmp_data_dir / "mlops" / "monitoring").mkdir(
-            parents=True, exist_ok=True
-        )
+        (tmp_data_dir / "mlops" / "monitoring").mkdir(parents=True, exist_ok=True)
 
         df = tp.load_and_validate()
         assert len(df) == 11
@@ -192,9 +179,7 @@ class TestEvaluation:
             evaluate,
         )
 
-        metrics_file = (
-            tmp_data_dir / "mlops" / "monitoring" / "metrics.json"
-        )
+        metrics_file = tmp_data_dir / "mlops" / "monitoring" / "metrics.json"
         metrics_file.parent.mkdir(parents=True)
 
         df = pd.DataFrame(SAMPLE_LOGINS)
@@ -233,12 +218,8 @@ class TestEndToEnd:
     def test_pipeline_runs(self, tmp_data_dir, monkeypatch):
         import mlops.pipeline.train_pipeline as tp
 
-        monkeypatch.setattr(
-            tp, "LOGINS_CSV", tmp_data_dir / "data" / "logins.csv"
-        )
-        monkeypatch.setattr(
-            tp, "MODEL_FILE", tmp_data_dir / "models" / "model.pkl"
-        )
+        monkeypatch.setattr(tp, "LOGINS_CSV", tmp_data_dir / "data" / "logins.csv")
+        monkeypatch.setattr(tp, "MODEL_FILE", tmp_data_dir / "models" / "model.pkl")
         monkeypatch.setattr(
             tp,
             "METRICS_FILE",
@@ -246,9 +227,7 @@ class TestEndToEnd:
         )
 
         (tmp_data_dir / "models").mkdir(parents=True, exist_ok=True)
-        (tmp_data_dir / "mlops" / "monitoring").mkdir(
-            parents=True, exist_ok=True
-        )
+        (tmp_data_dir / "mlops" / "monitoring").mkdir(parents=True, exist_ok=True)
 
         exit_code = tp.run_pipeline()
         assert exit_code == 0

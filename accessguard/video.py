@@ -5,7 +5,6 @@ import av
 from streamlit_webrtc import VideoTransformerBase
 from config import VIDEO_DIR
 
-
 # Ensure directory exists
 os.makedirs(VIDEO_DIR, exist_ok=True)
 

@@ -38,9 +38,7 @@ def get_geolocation(ip_address: str) -> dict:
     Fetch geolocation info using ipapi.
     """
     try:
-        response = requests.get(
-            f"https://ipapi.co/{ip_address}/json/", timeout=5
-        )
+        response = requests.get(f"https://ipapi.co/{ip_address}/json/", timeout=5)
 
         if response.status_code == 200:
             data = response.json()
@@ -71,15 +69,12 @@ def login_attempts_in_last_hour(
     try:
         df = pd.read_csv(log_path)
 
-        df["timestamp"] = pd.to_datetime(
-            df["timestamp"], errors="coerce"
-        )
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
 
         one_hour_ago = datetime.now() - timedelta(hours=1)
 
         recent_attempts = df[
-            (df["username"] == username)
-            & (df["timestamp"] > one_hour_ago)
+            (df["username"] == username) & (df["timestamp"] > one_hour_ago)
         ]
 
         return len(recent_attempts)

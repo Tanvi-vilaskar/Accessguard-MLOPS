@@ -149,15 +149,11 @@ def display_confusion_matrix(model, X_test, y_test, outcome_encoder):
     print("-" * (9 * len(header)))
 
     for i, true_label in enumerate(labels):
-        row = [f"True {true_label}"] + [
-            f"{cm[i, j]:<8}" for j in range(len(labels))
-        ]
+        row = [f"True {true_label}"] + [f"{cm[i, j]:<8}" for j in range(len(labels))]
         print(" | ".join(row))
 
     print("\nClassification Report:")
-    report = classification_report(
-        y_test, y_pred, target_names=labels, zero_division=0
-    )
+    report = classification_report(y_test, y_pred, target_names=labels, zero_division=0)
     print(report)
 
 
