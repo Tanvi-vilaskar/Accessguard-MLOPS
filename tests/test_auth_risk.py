@@ -4,10 +4,8 @@ tests/test_auth_risk.py
 Tests for user registration trigger and risk scoring logic.
 """
 
-
 import pandas as pd
 from unittest.mock import patch
-
 
 # ── Tests: Registration Trigger ───────────────────────────────────────────────
 

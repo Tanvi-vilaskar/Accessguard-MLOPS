@@ -5,10 +5,8 @@ Unit and integration tests for the AccessGuard MLOps pipeline.
 Run with: pytest tests/ -v
 """
 
-
 import pytest
 import pandas as pd
-
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 

@@ -14,7 +14,6 @@ from .risk import predict_login
 from .model import train_login_model
 
 
-
 # ------------------ Helper Function ------------------
 def log_login_attempt(
     username,
