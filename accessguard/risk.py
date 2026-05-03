@@ -1,8 +1,6 @@
 # risk.py
-import os
-import math
-from datetime import datetime
-from .utils import get_geolocation, login_attempts_in_last_hour, load_logins
+
+from .utils import get_geolocation, login_attempts_in_last_hour
 from .profile_model import get_user_profile
 
 # Tunable thresholds

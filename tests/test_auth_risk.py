@@ -4,11 +4,10 @@ tests/test_auth_risk.py
 Tests for user registration trigger and risk scoring logic.
 """
 
-import sys
-import pytest
+
 import pandas as pd
-from unittest.mock import patch, MagicMock
-from pathlib import Path
+from unittest.mock import patch
+
 
 # ── Tests: Registration Trigger ───────────────────────────────────────────────
 

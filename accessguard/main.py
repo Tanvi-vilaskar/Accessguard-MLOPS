@@ -12,8 +12,7 @@ from .utils import get_ip, get_device_info, get_browser_info, get_hour
 from .auth import register_user, check_password
 from .risk import predict_login
 from .model import train_login_model
-from .profile_model import compute_user_profile
-from .alerts import notify_manager
+
 
 
 # ------------------ Helper Function ------------------

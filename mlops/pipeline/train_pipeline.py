@@ -15,7 +15,7 @@ Steps:
   6. Write metrics to mlops/monitoring/metrics.json
 """
 
-import os
+
 import json
 import hashlib
 import logging
