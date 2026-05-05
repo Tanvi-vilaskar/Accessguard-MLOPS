@@ -108,5 +108,27 @@
     ],
     "train_samples": 6,
     "n_estimators": 100
+  },
+  {
+    "timestamp": "2026-05-05T04:57:00.234566",
+    "accuracy": 0.8286,
+    "f1_weighted": 0.8071,
+    "roc_auc": 0.7389,
+    "confusion_matrix": [
+      [
+        54,
+        3
+      ],
+      [
+        9,
+        4
+      ]
+    ],
+    "classes": [
+      "0.0",
+      "1.0"
+    ],
+    "train_samples": 6,
+    "n_estimators": 100
   }
 ]
