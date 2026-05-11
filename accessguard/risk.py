@@ -1,7 +1,7 @@
 # risk.py
 
-from .utils import get_geolocation, login_attempts_in_last_hour
-from .profile_model import get_user_profile
+from utils import get_geolocation, login_attempts_in_last_hour
+from profile_model import get_user_profile
 
 # Tunable thresholds
 GEO_MISMATCH_SCORE = 25

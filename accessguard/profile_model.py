@@ -2,10 +2,10 @@
 import os
 import pandas as pd
 from datetime import datetime
-from .config import (
+from config import (
     LOGINS_CSV,
 )
-from .utils import get_geolocation
+from utils import get_geolocation
 
 
 def compute_user_profile(username, min_rows=5):

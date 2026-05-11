@@ -4,7 +4,7 @@ import joblib
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
-from .data_handler import load_logins
+from data_handler import load_logins
 from config import DATA_DIR
 
 USER_MODEL_DIR = os.path.join(DATA_DIR, "user_models")

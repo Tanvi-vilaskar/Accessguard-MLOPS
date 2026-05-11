@@ -2,16 +2,23 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import json
+import sys
+import os
+
+# Ensure the accessguard package directory is on the path for direct Streamlit execution
+_pkg_dir = os.path.dirname(os.path.abspath(__file__))
+if _pkg_dir not in sys.path:
+    sys.path.insert(0, _pkg_dir)
 
 # Import the new function
 from mfa_verification import check_face_in_image
 
-# Import other modules (assuming they are in the environment)
-from .data_handler import ensure_csvs_exist, load_users, save_logins, load_logins
-from .utils import get_ip, get_device_info, get_browser_info, get_hour
-from .auth import register_user, check_password
-from .risk import predict_login
-from .model import train_login_model
+# Import other modules
+from data_handler import ensure_csvs_exist, load_users, save_logins, load_logins
+from utils import get_ip, get_device_info, get_browser_info, get_hour
+from auth import register_user, check_password
+from risk import predict_login
+from model import train_login_model
 
 
 # ------------------ Helper Function ------------------

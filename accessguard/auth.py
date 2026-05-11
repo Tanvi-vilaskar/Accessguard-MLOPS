@@ -2,8 +2,8 @@
 import pandas as pd
 import bcrypt
 from datetime import datetime
-from .data_handler import load_users, save_users
-from .utils import get_ip, get_device_info, get_browser_info
+from data_handler import load_users, save_users
+from utils import get_ip, get_device_info, get_browser_info
 
 try:
     from mlops.pipeline.trigger_pipeline import on_new_registration
