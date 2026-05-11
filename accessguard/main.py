@@ -19,6 +19,7 @@ from utils import get_ip, get_device_info, get_browser_info, get_hour
 from auth import register_user, check_password
 from risk import predict_login
 from model import train_login_model
+from chatbot import chatbot_response
 
 
 # ------------------ Helper Function ------------------
@@ -67,7 +68,7 @@ def main():
     ensure_csvs_exist()
 
     page = st.sidebar.selectbox(
-        "Choose Page", ["Register", "Login", "Train Model", "Admin"]
+        "Choose Page", ["Register", "Login", "Train Model", "Admin", "🤖 Chatbot"]
     )
 
     # Session variables
@@ -89,26 +90,41 @@ def main():
         password = st.text_input("Password", type="password")
         mfa_enabled = st.checkbox("Enable MFA?")
 
+        # ── Camera capture for face registration ──────────────────────────────
+        st.info("📸 Please capture a photo of your face to complete registration.")
+        reg_photo = st.camera_input("Take a photo for face registration", key="reg_camera")
+
         if st.button("Register") and not st.session_state.registration_done:
             if username.strip() == "" or password.strip() == "":
                 st.warning("Enter both username and password")
+            elif reg_photo is None:
+                st.warning("📸 Please capture your face photo before registering.")
             else:
-                # NOTE: Face detection is usually skipped during a simplified registration for demo purposes
-                # Register the user
-                uid = register_user(username, password, mfa_enabled)
-                if uid is None:
-                    st.error(
-                        "❌ Registration failed. User already exists or error occurred."
-                    )
+                # Verify face is present in the captured photo
+                with st.spinner("Detecting face..."):
+                    face_found = check_face_in_image(reg_photo)
+
+                if not face_found:
+                    st.error("❌ No face detected in the photo. Please retake and try again.")
                 else:
-                    st.success(f"✅ User {username} registered with ID {uid}")
-                    st.session_state.registration_done = True
+                    uid = register_user(username, password, mfa_enabled)
+                    if uid is None:
+                        st.error(
+                            "❌ Registration failed. User already exists or error occurred."
+                        )
+                    else:
+                        st.success(f"✅ User {username} registered with ID {uid}")
+                        st.session_state.registration_done = True
 
     # ---------------- LOGIN ----------------
     elif page == "Login":
         st.subheader("🔑 Login")
         username = st.text_input("Enter username")
         password = st.text_input("Enter password", type="password")
+
+        # ── Camera capture for face verification ───────────────────────────
+        st.info("📸 Please capture a photo of your face to verify your identity.")
+        login_photo = st.camera_input("Take a photo to verify your face", key="login_camera")
 
         # --- Initial Login Attempt ---
         if st.button("Login", key="initial_login"):
@@ -117,6 +133,23 @@ def main():
             st.session_state.login_info = None
             st.session_state.mfa_verified = False
             st.session_state.mfa_photo = None
+
+            # ── Step 0: Face check ────────────────────────────────────────
+            if login_photo is None:
+                st.warning("📸 Please capture your face photo before logging in.")
+                st.stop()
+
+            with st.spinner("Verifying face..."):
+                face_ok = check_face_in_image(login_photo)
+
+            if not face_ok:
+                st.error("❌ Face not detected. Please retake your photo and try again.")
+                log_login_attempt(
+                    username, get_ip(), get_device_info(), get_browser_info(),
+                    0, outcome=1, risk_score=1.0, risk_decision="BLOCK",
+                    reasons=["Face not detected at login"],
+                )
+                st.stop()
 
             users = load_users()
             if username not in users["Username"].values:
@@ -426,6 +459,71 @@ def main():
                 )
             else:
                 st.info("No recent blocked users found.")
+
+
+    # ---------------- CHATBOT ----------------
+    elif page == "🤖 Chatbot":
+        st.subheader("🤖 Login History Chatbot")
+        st.markdown(
+            "Ask me anything about login history, blocked attempts, risk scores, and more!"
+        )
+
+        # Initialise chat history in session state
+        if "chat_messages" not in st.session_state:
+            st.session_state.chat_messages = [
+                {
+                    "role": "assistant",
+                    "content": (
+                        "👋 Hi! I'm the **AccessGuard Login Bot**.\n\n"
+                        "I can tell you about login history, blocked attempts, "
+                        "risk scores, devices, IPs and more.\n\n"
+                        "Type **help** to see all questions I can answer!"
+                    ),
+                }
+            ]
+
+        # Render chat history
+        for msg in st.session_state.chat_messages:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+
+        # Chat input
+        if prompt := st.chat_input("Ask about login history..."):
+            # Show user message
+            st.session_state.chat_messages.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            # Generate bot response
+            with st.chat_message("assistant"):
+                with st.spinner("Thinking..."):
+                    response = chatbot_response(prompt)
+                st.markdown(response)
+            st.session_state.chat_messages.append(
+                {"role": "assistant", "content": response}
+            )
+
+        # Quick action buttons
+        st.divider()
+        st.markdown("**💡 Quick Questions:**")
+        cols = st.columns(3)
+        quick_questions = [
+            "Show login summary",
+            "Last 5 logins",
+            "Blocked attempts",
+            "Show all users",
+            "Risk score stats",
+            "Logins today",
+        ]
+        for i, q in enumerate(quick_questions):
+            col = cols[i % 3]
+            if col.button(q, key=f"quick_{i}"):
+                st.session_state.chat_messages.append({"role": "user", "content": q})
+                response = chatbot_response(q)
+                st.session_state.chat_messages.append(
+                    {"role": "assistant", "content": response}
+                )
+                st.rerun()
 
 
 if __name__ == "__main__":

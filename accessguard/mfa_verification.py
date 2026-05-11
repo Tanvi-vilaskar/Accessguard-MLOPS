@@ -44,7 +44,7 @@ def check_face_in_image(image_data):
         st.image(
             cv2.cvtColor(image, cv2.COLOR_BGR2RGB),
             caption="Face Detected (MFA Verified)",
-            use_column_width=True,
+            use_container_width=True,
         )
         return True
     else:
@@ -52,7 +52,7 @@ def check_face_in_image(image_data):
         st.image(
             cv2.cvtColor(image, cv2.COLOR_BGR2RGB),
             caption="No Face Detected",
-            use_column_width=True,
+            use_container_width=True,
         )
         return False
 
