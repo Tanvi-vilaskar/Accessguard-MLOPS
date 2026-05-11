@@ -5,10 +5,10 @@ import pandas as pd
 from datetime import datetime
 from data_handler import load_logins, load_users
 
-
 # ─────────────────────────────────────────────
 # Utility helpers
 # ─────────────────────────────────────────────
+
 
 def _load_logins() -> pd.DataFrame:
     df = load_logins()
@@ -77,6 +77,7 @@ def _parse_reasons(raw) -> str:
 # Intent handlers
 # ─────────────────────────────────────────────
 
+
 def _intent_summary(df: pd.DataFrame, username: str | None) -> str:
     if df.empty:
         return "📭 No login records found yet."
@@ -84,10 +85,10 @@ def _intent_summary(df: pd.DataFrame, username: str | None) -> str:
     if sub.empty:
         return f"❌ No records found for **{username}**."
 
-    total   = len(sub)
+    total = len(sub)
     allowed = int((sub["Outcome"] == 0).sum()) if "Outcome" in sub.columns else "N/A"
     blocked = int((sub["Outcome"] == 1).sum()) if "Outcome" in sub.columns else "N/A"
-    label   = f" for **{username}**" if username else " (all users)"
+    label = f" for **{username}**" if username else " (all users)"
 
     avg_risk = ""
     if "Risk Score" in sub.columns:
@@ -96,17 +97,21 @@ def _intent_summary(df: pd.DataFrame, username: str | None) -> str:
             avg_risk = f"\n- 🎯 Average risk score : **{mean:.2f}**"
 
     first_ts = sub["Timestamp"].min() if "Timestamp" in sub.columns else None
-    last_ts  = sub["Timestamp"].max() if "Timestamp" in sub.columns else None
-    period   = ""
-    if first_ts is not None and last_ts is not None and pd.notna(first_ts) and pd.notna(last_ts):
+    last_ts = sub["Timestamp"].max() if "Timestamp" in sub.columns else None
+    period = ""
+    if (
+        first_ts is not None
+        and last_ts is not None
+        and pd.notna(first_ts)
+        and pd.notna(last_ts)
+    ):
         period = f"\n- 📅 Period  : **{_fmt_ts(first_ts)}** → **{_fmt_ts(last_ts)}**"
 
     return (
         f"📊 **Login summary{label}:**\n"
         f"- 🔢 Total attempts : **{total}**\n"
         f"- ✅ Allowed        : **{allowed}**\n"
-        f"- ❌ Blocked        : **{blocked}**"
-        + avg_risk + period
+        f"- ❌ Blocked        : **{blocked}**" + avg_risk + period
     )
 
 
@@ -117,17 +122,17 @@ def _intent_recent(df: pd.DataFrame, username: str | None, n: int) -> str:
     if sub.empty:
         return f"❌ No records found for **{username}**."
 
-    sub   = sub.sort_values("Timestamp", ascending=False).head(n)
+    sub = sub.sort_values("Timestamp", ascending=False).head(n)
     label = f" for **{username}**" if username else " (all users)"
     lines = [f"🕐 **Last {n} login attempts{label}:**\n"]
     lines.append("| # | Time | User | Status | IP | Risk |")
     lines.append("|---|------|------|--------|----|------|")
     for i, (_, row) in enumerate(sub.iterrows(), 1):
-        ts      = _fmt_ts(row.get("Timestamp", ""))
-        user    = row.get("Username", "—")
+        ts = _fmt_ts(row.get("Timestamp", ""))
+        user = row.get("Username", "—")
         outcome = _outcome_label(row.get("Outcome"))
-        ip      = row.get("IP", "—")
-        risk    = row.get("Risk Score", "")
+        ip = row.get("IP", "—")
+        risk = row.get("Risk Score", "")
         risk_str = f"{risk:.0f}" if pd.notna(risk) and risk != "" else "—"
         lines.append(f"| {i} | {ts} | **{user}** | {outcome} | `{ip}` | {risk_str} |")
     return "\n".join(lines)
@@ -153,10 +158,10 @@ def _intent_blocked(df: pd.DataFrame, username: str | None) -> str:
     lines.append("|---|------|------|----|------|--------|")
 
     for i, (_, row) in enumerate(blocked.head(15).iterrows(), 1):
-        ts     = _fmt_ts(row.get("Timestamp", ""))
-        user   = row.get("Username", "—")
-        ip     = row.get("IP", "—")
-        risk   = row.get("Risk Score", "")
+        ts = _fmt_ts(row.get("Timestamp", ""))
+        user = row.get("Username", "—")
+        ip = row.get("IP", "—")
+        risk = row.get("Risk Score", "")
         risk_s = f"{risk:.0f}" if pd.notna(risk) and risk != "" else "—"
         reason = _parse_reasons(row.get("Reasons", ""))
         # Truncate long reasons
@@ -176,17 +181,23 @@ def _intent_last_login(df: pd.DataFrame, username: str | None) -> str:
     if sub.empty:
         return f"❌ No records found for **{username}**."
 
-    row     = sub.sort_values("Timestamp", ascending=False).iloc[0]
-    ts      = _fmt_ts(row.get("Timestamp", ""))
-    ip      = row.get("IP", "—")
-    device  = row.get("Device", "—")
+    row = sub.sort_values("Timestamp", ascending=False).iloc[0]
+    ts = _fmt_ts(row.get("Timestamp", ""))
+    ip = row.get("IP", "—")
+    device = row.get("Device", "—")
     browser = row.get("Browser", "—")
     outcome = _outcome_label(row.get("Outcome"))
-    risk    = row.get("Risk Score", "")
-    risk_str = f"\n- 🎯 Risk score : **{risk:.2f}**" if pd.notna(risk) and risk != "" else ""
+    risk = row.get("Risk Score", "")
+    risk_str = (
+        f"\n- 🎯 Risk score : **{risk:.2f}**" if pd.notna(risk) and risk != "" else ""
+    )
     decision = row.get("Risk Decision", "")
-    dec_str  = f"\n- 🔐 Decision   : **{decision}**" if pd.notna(decision) and str(decision).strip() else ""
-    who      = f"**{username}**" if username else f"**{row.get('Username','unknown')}**"
+    dec_str = (
+        f"\n- 🔐 Decision   : **{decision}**"
+        if pd.notna(decision) and str(decision).strip()
+        else ""
+    )
+    who = f"**{username}**" if username else f"**{row.get('Username','unknown')}**"
 
     return (
         f"🔍 **Last login for {who}:**\n"
@@ -194,8 +205,7 @@ def _intent_last_login(df: pd.DataFrame, username: str | None) -> str:
         f"- 🌐 IP      : `{ip}`\n"
         f"- 💻 Device  : **{device}**\n"
         f"- 🌍 Browser : **{browser}**\n"
-        f"- Status    : {outcome}"
-        + risk_str + dec_str
+        f"- Status    : {outcome}" + risk_str + dec_str
     )
 
 
@@ -206,7 +216,7 @@ def _intent_devices(df: pd.DataFrame, username: str | None) -> str:
     if sub.empty:
         return f"❌ No records found for **{username}**."
 
-    label   = f" for **{username}**" if username else " (all users)"
+    label = f" for **{username}**" if username else " (all users)"
     devices = sub["Device"].value_counts() if "Device" in sub.columns else pd.Series()
     if devices.empty:
         return f"No device data found{label}."
@@ -227,7 +237,7 @@ def _intent_ip(df: pd.DataFrame, username: str | None) -> str:
         return f"❌ No records found for **{username}**."
 
     label = f" for **{username}**" if username else " (all users)"
-    ips   = sub["IP"].value_counts() if "IP" in sub.columns else pd.Series()
+    ips = sub["IP"].value_counts() if "IP" in sub.columns else pd.Series()
     if ips.empty:
         return f"No IP data found{label}."
 
@@ -248,13 +258,19 @@ def _intent_risk(df: pd.DataFrame, username: str | None) -> str:
     if sub.empty:
         return f"❌ No records found for **{username}**."
 
-    label     = f" for **{username}**" if username else " (all users)"
-    scores    = sub["Risk Score"].dropna()
+    label = f" for **{username}**" if username else " (all users)"
+    scores = sub["Risk Score"].dropna()
     if scores.empty:
         return f"No risk score data available{label}."
 
-    high_risk = sub[sub["Risk Score"] >= 60] if "Risk Score" in sub.columns else pd.DataFrame()
-    med_risk  = sub[(sub["Risk Score"] >= 30) & (sub["Risk Score"] < 60)] if "Risk Score" in sub.columns else pd.DataFrame()
+    high_risk = (
+        sub[sub["Risk Score"] >= 60] if "Risk Score" in sub.columns else pd.DataFrame()
+    )
+    med_risk = (
+        sub[(sub["Risk Score"] >= 30) & (sub["Risk Score"] < 60)]
+        if "Risk Score" in sub.columns
+        else pd.DataFrame()
+    )
 
     lines = [f"🎯 **Risk score analysis{label}:**\n"]
     lines.append("| Metric | Value |")
@@ -264,7 +280,9 @@ def _intent_risk(df: pd.DataFrame, username: str | None) -> str:
     lines.append(f"| Lowest score  | **{scores.min():.2f}** |")
     lines.append(f"| 🔴 High risk (≥60) | **{len(high_risk)}** attempts |")
     lines.append(f"| 🟡 Medium risk (30-59) | **{len(med_risk)}** attempts |")
-    lines.append(f"| 🟢 Low risk (<30) | **{len(sub) - len(high_risk) - len(med_risk)}** attempts |")
+    lines.append(
+        f"| 🟢 Low risk (<30) | **{len(sub) - len(high_risk) - len(med_risk)}** attempts |"
+    )
     return "\n".join(lines)
 
 
@@ -317,9 +335,9 @@ def _intent_users(df: pd.DataFrame) -> str:
                 reg_map[uname] = "—"
 
     for i, uname in enumerate(all_users, 1):
-        total   = login_counts.get(uname, 0)
+        total = login_counts.get(uname, 0)
         blocked = blocked_counts.get(uname, 0)
-        reg     = reg_map.get(uname, "—")
+        reg = reg_map.get(uname, "—")
         blocked_str = f"❌ {blocked}" if blocked > 0 else "✅ 0"
         lines.append(f"| {i} | **{uname}** | {total} | {blocked_str} | {reg} |")
 
@@ -330,9 +348,13 @@ def _intent_today(df: pd.DataFrame, username: str | None) -> str:
     if df.empty:
         return "📭 No login records found yet."
     today = datetime.now().date()
-    sub   = df if not username else df[df["Username"] == username]
-    today_df = sub[sub["Timestamp"].dt.date == today] if "Timestamp" in sub.columns else pd.DataFrame()
-    label    = f" for **{username}**" if username else ""
+    sub = df if not username else df[df["Username"] == username]
+    today_df = (
+        sub[sub["Timestamp"].dt.date == today]
+        if "Timestamp" in sub.columns
+        else pd.DataFrame()
+    )
+    label = f" for **{username}**" if username else ""
     if today_df.empty:
         return f"📭 No login attempts today{label}."
 
@@ -340,10 +362,10 @@ def _intent_today(df: pd.DataFrame, username: str | None) -> str:
     lines.append("| Time | User | Status | IP |")
     lines.append("|------|------|--------|----|")
     for _, row in today_df.sort_values("Timestamp", ascending=False).iterrows():
-        ts      = _fmt_ts(row.get("Timestamp", ""))
-        user    = row.get("Username", "—")
+        ts = _fmt_ts(row.get("Timestamp", ""))
+        user = row.get("Username", "—")
         outcome = _outcome_label(row.get("Outcome"))
-        ip      = row.get("IP", "—")
+        ip = row.get("IP", "—")
         lines.append(f"| {ts} | **{user}** | {outcome} | `{ip}` |")
     return "\n".join(lines)
 
@@ -370,13 +392,14 @@ def _intent_help() -> str:
 # Intent classification
 # ─────────────────────────────────────────────
 
+
 def _match(pattern: str, text: str) -> bool:
     return bool(re.search(pattern, text, re.IGNORECASE))
 
 
 def chatbot_response(user_message: str) -> str:
-    msg  = user_message.strip()
-    df   = _load_logins()
+    msg = user_message.strip()
+    df = _load_logins()
     user = _extract_username(msg, df)
 
     # ── Greetings ──
@@ -404,7 +427,9 @@ def chatbot_response(user_message: str) -> str:
         return _intent_last_login(df, user)
 
     # ── Recent N logins — NOTE: "login" OR "logins" (plurals!) ──
-    if _match(r"\b(recent|last|latest)\b", msg) and _match(r"\blogins?\b|\battempts?\b|\baccess\b", msg):
+    if _match(r"\b(recent|last|latest)\b", msg) and _match(
+        r"\blogins?\b|\battempts?\b|\baccess\b", msg
+    ):
         n = _extract_n(msg, default=5)
         return _intent_recent(df, user, n)
 
@@ -421,11 +446,16 @@ def chatbot_response(user_message: str) -> str:
         return _intent_risk(df, user)
 
     # ── All users ──
-    if _match(r"\b(users?|all\s+users?|who|list\s+users?|people|everyone|members?)\b", msg):
+    if _match(
+        r"\b(users?|all\s+users?|who|list\s+users?|people|everyone|members?)\b", msg
+    ):
         return _intent_users(df)
 
     # ── Summary / stats ──
-    if _match(r"\b(summary|stats|statistics|total|count|how\s+many|history|logins?|attempts?|report|overview)\b", msg):
+    if _match(
+        r"\b(summary|stats|statistics|total|count|how\s+many|history|logins?|attempts?|report|overview)\b",
+        msg,
+    ):
         return _intent_summary(df, user)
 
     # ── Username mentioned but intent unclear → summary ──

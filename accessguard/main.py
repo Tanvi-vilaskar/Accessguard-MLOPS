@@ -92,7 +92,9 @@ def main():
 
         # ── Camera capture for face registration ──────────────────────────────
         st.info("📸 Please capture a photo of your face to complete registration.")
-        reg_photo = st.camera_input("Take a photo for face registration", key="reg_camera")
+        reg_photo = st.camera_input(
+            "Take a photo for face registration", key="reg_camera"
+        )
 
         if st.button("Register") and not st.session_state.registration_done:
             if username.strip() == "" or password.strip() == "":
@@ -105,7 +107,9 @@ def main():
                     face_found = check_face_in_image(reg_photo)
 
                 if not face_found:
-                    st.error("❌ No face detected in the photo. Please retake and try again.")
+                    st.error(
+                        "❌ No face detected in the photo. Please retake and try again."
+                    )
                 else:
                     uid = register_user(username, password, mfa_enabled)
                     if uid is None:
@@ -124,7 +128,9 @@ def main():
 
         # ── Camera capture for face verification ───────────────────────────
         st.info("📸 Please capture a photo of your face to verify your identity.")
-        login_photo = st.camera_input("Take a photo to verify your face", key="login_camera")
+        login_photo = st.camera_input(
+            "Take a photo to verify your face", key="login_camera"
+        )
 
         # --- Initial Login Attempt ---
         if st.button("Login", key="initial_login"):
@@ -143,10 +149,18 @@ def main():
                 face_ok = check_face_in_image(login_photo)
 
             if not face_ok:
-                st.error("❌ Face not detected. Please retake your photo and try again.")
+                st.error(
+                    "❌ Face not detected. Please retake your photo and try again."
+                )
                 log_login_attempt(
-                    username, get_ip(), get_device_info(), get_browser_info(),
-                    0, outcome=1, risk_score=1.0, risk_decision="BLOCK",
+                    username,
+                    get_ip(),
+                    get_device_info(),
+                    get_browser_info(),
+                    0,
+                    outcome=1,
+                    risk_score=1.0,
+                    risk_decision="BLOCK",
                     reasons=["Face not detected at login"],
                 )
                 st.stop()
@@ -459,7 +473,6 @@ def main():
                 )
             else:
                 st.info("No recent blocked users found.")
-
 
     # ---------------- CHATBOT ----------------
     elif page == "🤖 Chatbot":
