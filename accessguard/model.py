@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix, classification_report
 
-from .data_handler import load_logins
+from data_handler import load_logins
 from config import MODEL_FILE
 
 
